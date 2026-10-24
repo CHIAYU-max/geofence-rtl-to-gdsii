@@ -1,0 +1,19 @@
+# VCS / Verdi
+simv*
+csrc/
+*.daidir/
+ucli.key
+*.fsdb
+*.vpd
+*.log
+novas*
+verdiLog/
+DVEfiles/
+# Design Compiler
+work/
+alib-52/
+command.log
+default.svf
+*.mr
+*.syn
+*.pvl
