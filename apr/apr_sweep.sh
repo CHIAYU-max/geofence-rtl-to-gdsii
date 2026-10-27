@@ -114,6 +114,9 @@ EOF
     mkdir -p drc lvs
     cp $LIB/icv/drc/ICV13S_8M.drc.rs drc/
     cp $LIB/icv/lvs/* lvs/
+    # compare black-box cells without the Q / QN ports: an output left unconnected in every instance of a cell
+    # (e.g. the only EDFFXL) has no layout port; connected QN pins are still matched through their nets
+    grep -q remove_schematic_ports lvs/lvs_black_box.rs || sed -i "s/^lvs_black_box_options(/lvs_black_box_options(\nremove_schematic_ports = {\"Q\", \"QN\"},/" lvs/lvs_black_box.rs
     (cd drc && icv -i ../out/geofence.gds -c geofence -host_init 4 ICV13S_8M.drc.rs > icv_drc.out 2>&1)
     (cd lvs && icv_nettran -outType SPICE -verilog ../out/geofence_apr_pg.v -outName verilog2spice.sp > nettran.out 2>&1 &&
         icv -vue -i ../out/geofence.gds -c geofence -s verilog2spice.sp -stc geofence -sf SPICE -host_init 4 ICV_LVS.rs > icv_lvs.out 2>&1)

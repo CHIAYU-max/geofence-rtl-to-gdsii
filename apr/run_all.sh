@@ -9,6 +9,9 @@ LIB=/mnt/nfs/opt/PROCESS/CBDK_IC_Contest_v2.5
 mkdir -p rpt drc lvs
 cp -n $LIB/icv/drc/ICV13S_8M.drc.rs drc/ 2>/dev/null
 cp -n $LIB/icv/lvs/* lvs/ 2>/dev/null
+# compare black-box cells without the Q / QN ports: an output left unconnected in every instance of a cell
+# (e.g. the only EDFFXL) has no layout port; connected QN pins are still matched through their nets
+grep -q remove_schematic_ports lvs/lvs_black_box.rs || sed -i "s/^lvs_black_box_options(/lvs_black_box_options(\nremove_schematic_ports = {\"Q\", \"QN\"},/" lvs/lvs_black_box.rs
 for s in 01_init 02_pnr 03_out; do
   icc2_shell -f $s.tcl -output_log_file $s.log < /dev/null > /dev/null 2>&1
   grep -q "STAGE: ${s#*_} done" $s.log || { echo "FAIL $s"; grep "^Error" $s.log | head; exit 1; }

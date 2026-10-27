@@ -20,8 +20,8 @@ variants pass all 50 patterns in post-layout simulation and are DRC clean.
 | Combinational + clock gating | 30 ns | 60% | 10,699 | 17,782 | +13.31 / +0.14 / +0.01 | 0.475 | pass |
 | Serial shift-add multiplier | 30 ns | 60% | 10,380 | 17,050 | +13.29 / +0.29 / +0.08 | 3.470 | pass |
 | Serial + clock gating | 30 ns | 60% | 9,251 | 15,012 | +12.94 / +0.12 / −0.00 | 1.523 | pass |
-| Combinational, re-synthesized | 10 ns | 54% | 13,214 | 24,524 | −0.01 / +0.36 / +0.07 | 0.562 | see note |
-| Combinational, re-synthesized | 8 ns | 45% | 13,737 | 30,316 | −0.02 / +0.49 / +0.14 | 0.584 | see note |
+| Combinational, re-synthesized | 10 ns | 54% | 13,214 | 24,524 | −0.01 / +0.36 / +0.07 | 0.562 | pass |
+| Combinational, re-synthesized | 8 ns | 45% | 13,737 | 30,316 | −0.02 / +0.49 / +0.14 | 0.584 | pass |
 | Combinational multiplier | 30 ns | 89% | 11,751 | 13,155 | +13.17 / +0.32 / +0.09 | 0.661 | pass |
 
 - The contest ranks designs by synthesized cell area at a fixed 30-ns clock. By that metric the serial multiplier
@@ -31,8 +31,10 @@ variants pass all 50 patterns in post-layout simulation and are DRC clean.
 - The same netlist routes cleanly at 89% utilization, shrinking the core by 33% with no change in timing.
 - Clock gating fails SDF gate-level simulation right after synthesis, because the gated clock arrives later than the
   ungated one. After clock-tree synthesis balances both, the gated designs pass post-layout simulation.
-- The 8-ns and 10-ns runs explore Fmax (about 125 MHz at the slow corner). Their LVS matches every instance, net and
-  port, but IC Validator reports one black-box port mismatch on a single flip-flop; this is still open.
+- The 8-ns and 10-ns runs explore Fmax (about 125 MHz at the slow corner).
+- Black-box LVS compares cell ports by name, so a cell type whose Q or QN output is unused in every instance (the
+  only EDFFXL in the 10-ns netlist, for example) has no matching layout port. The flow drops Q and QN from the
+  port-list comparison; every net, including those driven by Q and QN, is still matched.
 
 ## Flow
 
@@ -52,8 +54,9 @@ Notes on the back end:
 - Parasitics come from ICC2 with TLU+; the library ships no StarRC tech file.
 - The GDS contains only phantom cell frames, so LVS treats standard cells as black boxes.
 - Problems fixed along the way: METAL5 power stripes that blocked rail vias, bar vias that break VIA5.W.1 (the flow
-  generates a tech file without them), missing port labels, nets that differ only in letter case, and an ICC2
-  corner that silently used the 1.32-V fast library until it was bound to the slow PVT.
+  generates a tech file without them), missing port labels, nets that differ only in letter case, an ICC2
+  corner that silently used the 1.32-V fast library until it was bound to the slow PVT, and unused Q / QN outputs
+  in black-box LVS.
 
 The baseline RTL is my own. The serial-multiplier variant, the synthesis sweeps and the back-end scripts were
 developed with the help of an AI assistant (Claude).
