@@ -1,0 +1,6 @@
+# only the flow scripts are tracked; libraries, reports, layouts and tool outputs stay local
+*
+!.gitignore
+!*.tcl
+!*.sdc
+!*.sh
