@@ -25,6 +25,12 @@ set_parasitic_parameters -corners slow -early_spec typical -late_spec typical
 current_scenario func_slow
 source apr.sdc
 set_scenario_status func_slow -setup true -hold true -leakage_power true -dynamic_power true
+# fast corner (fast.lib: 1.32 V, -40 C) for hold only; the library ships one TLU+ file, used for both
+create_corner fast
+create_scenario -name func_fast -mode func -corner fast
+set_parasitic_parameters -corners fast -early_spec typical -late_spec typical
+set_scenario_status func_fast -setup false -hold true -leakage_power false -dynamic_power false
+current_scenario func_slow
 
 # floorplan: 60% core utilization, 10 um ring channel
 initialize_floorplan -core_utilization $UTIL -core_offset 12
@@ -41,6 +47,10 @@ set_process_number 1 -corners slow
 set_voltage 1.08 -corners slow -object_list [get_supply_nets VDD]
 set_voltage 0.00 -corners slow -object_list [get_supply_nets VSS]
 set_temperature 125 -corners slow
+set_process_number 1 -corners fast
+set_voltage 1.32 -corners fast -object_list [get_supply_nets VDD]
+set_voltage 0.00 -corners fast -object_list [get_supply_nets VSS]
+set_temperature -40 -corners fast
 
 create_pg_ring_pattern ring -horizontal_layer METAL5 -vertical_layer METAL6 \
   -horizontal_width 2 -vertical_width 2 -horizontal_spacing 1 -vertical_spacing 1

@@ -11,30 +11,34 @@ export VERDI_HOME=/mnt/nfs/opt/EDA/synopsys/verdi/cur
 OUT=$APR/sweep_summary.csv
 [ -f $APR/tsmc13_CIC_nofat.tf ] || awk '/ContactCode.*_fat/{f=1} f&&/^}/{f=0;next} !f' $LIB/ICC2/tsmc13_CIC.tf > $APR/tsmc13_CIC_nofat.tf
 
-# name arch clock_gating cycle_ns netlist (relative to ~/icc2021_geofence)
+# name arch clock_gating cycle_ns target_util netlist (relative to ~/icc2021_geofence)
 VARIANTS="
-comb_30      combinational no  30 sweep/A0_base/geofence_syn.v
-comb_cg_30   combinational yes 30 sweep/CG_base_30ns/geofence_syn.v
-serial_30    serial        no  30 sweep/M_serial/syn_compile/geofence_syn.v
-serial_cg_30 serial        yes 30 sweep/CG_serial_30ns/geofence_syn.v
-comb_10      combinational no  10 sweep/B_10ns/geofence_syn.v
-comb_8       combinational no  8  sweep/B_8ns/geofence_syn.v
+comb_30      combinational no  30 0.6 sweep/A0_base/geofence_syn.v
+comb_cg_30   combinational yes 30 0.6 sweep/CG_base_30ns/geofence_syn.v
+serial_30    serial        no  30 0.6 sweep/M_serial/syn_compile/geofence_syn.v
+serial_cg_30 serial        yes 30 0.6 sweep/CG_serial_30ns/geofence_syn.v
+comb_10      combinational no  10 0.6 sweep/B_10ns/geofence_syn.v
+comb_8       combinational no  8  0.6 sweep/B_8ns/geofence_syn.v
+comb_30_u70  combinational no  30 0.7 sweep/A0_base/geofence_syn.v
+comb_30_u80  combinational no  30 0.8 sweep/A0_base/geofence_syn.v
+comb_30_u90  combinational no  30 0.9 sweep/A0_base/geofence_syn.v
 "
 
-[ -f $OUT ] || echo "name,arch,clock_gating,cycle_ns,cells,cell_area_um2,core_area_um2,util,setup_wns_ns,hold_wns_ns,post_sim,sim_ns,power_mW,energy_per_obj_nJ,drc,lvs" > $OUT
+# setup: slow corner (1.08 V, 125 C); hold: slow and fast (1.32 V, -40 C) corners, both in PrimeTime
+[ -f $OUT ] || echo "name,arch,clock_gating,cycle_ns,target_util,cells,cell_area_um2,core_area_um2,util,setup_wns_ns,hold_slow_ns,hold_fast_ns,post_sim,sim_ns,power_mW,energy_per_obj_nJ,drc,lvs" > $OUT
 
 run() {
-    local name=$1 arch=$2 cg=$3 cycle=$4 netlist=$ROOT/$5
+    local name=$1 arch=$2 cg=$3 cycle=$4 tutil=$5 netlist=$ROOT/$6
     local d=$APR/variants/$name
     rm -rf $d && mkdir -p $d/rpt && cd $d
     cp $APR/01_init.tcl $APR/02_pnr.tcl $APR/03_out.tcl .
     ln -sf $APR/tsmc13_CIC_nofat.tf .
-    sed -e "s#^set NETLIST .*#set NETLIST $netlist#" $APR/common.tcl > common.tcl
+    sed -e "s#^set NETLIST .*#set NETLIST $netlist#" -e "s#^set UTIL .*#set UTIL    $tutil#" $APR/common.tcl > common.tcl
     sed -e "s/^set cycle .*/set cycle $cycle/" $APR/apr.sdc > apr.sdc
     for s in 01_init 02_pnr 03_out; do
         timeout 3600 icc2_shell -f $s.tcl -output_log_file $s.log < /dev/null > /dev/null 2>&1
         if ! grep -q "STAGE: ${s#*_} done" $s.log; then
-            echo "$name,$arch,$cg,$cycle,,,,,,,ICC2_FAIL_$s,,,,," >> $OUT; cd $APR; return
+            echo "$name,$arch,$cg,$cycle,$tutil,,,,,,,,ICC2_FAIL_$s,,,,," >> $OUT; cd $APR; return
         fi
     done
 
@@ -53,7 +57,27 @@ run() {
     cd ..
 
     # PrimeTime: post-route STA and averaged power with the ICC2 SPEF
-    local spef=$(ls out/*.spef | head -1)
+    # ICC2 writes one SPEF per corner, named by temperature: slow 125 C, fast -40 C
+    local spef=$(ls out/*_125.spef | head -1)
+    local spef_fast=$(ls out/*_-40.spef | head -1)
+    cat > pt_fast.tcl <<EOF
+set search_path ". $LIB/SynopsysDC/db"
+set link_library "* fast.db"
+read_verilog out/geofence_apr.v
+current_design geofence
+link
+create_clock -name clk -period $cycle [get_ports clk]
+set_clock_uncertainty 0.1 [all_clocks]
+set_propagated_clock [all_clocks]
+set_input_delay 0 -clock clk -clock_fall [remove_from_collection [all_inputs] [get_ports clk]]
+set_output_delay 0 -clock clk -clock_fall [all_outputs]
+set_load 1 [all_outputs]
+read_parasitics -format spef $spef_fast
+report_timing -delay_type min -max_paths 3 -slack_lesser_than 1000 > rpt/pt_fast_timing_min.rpt
+exit
+EOF
+    timeout 900 pt_shell -f pt_fast.tcl < /dev/null > pt_fast.log 2>&1
+    local hold_fast=$(awk '/slack \(/{print $NF; exit}' rpt/pt_fast_timing_min.rpt)
     cat > pt.tcl <<EOF
 set search_path ". $LIB/SynopsysDC/db"
 set link_library "* slow.db"
@@ -101,15 +125,15 @@ EOF
     local core=$(awk '/^Total Area:/{print $NF; exit}' rpt/utilization.rpt)
     local util=$(awk '/Utilization Ratio/{print $NF; exit}' rpt/utilization.rpt)
     rm -rf sim/simv sim/simv.daidir sim/csrc sim/verdiLog sim/ucli.key
-    echo "$name,$arch,$cg,$cycle,$cells,$area,$core,$util,$setup,$hold,$sim,$sim_ns,$p_mw,$e_nj,$drc,$lvs" >> $OUT
+    echo "$name,$arch,$cg,$cycle,$tutil,$cells,$area,$core,$util,$setup,$hold,$hold_fast,$sim,$sim_ns,$p_mw,$e_nj,$drc,$lvs" >> $OUT
     cd $APR
 }
 
-echo "$VARIANTS" | while read name arch cg cycle netlist; do
+echo "$VARIANTS" | while read name arch cg cycle tutil netlist; do
     [ -z "$name" ] && continue
     if [ $# -gt 0 ] && ! printf '%s\n' "$@" | grep -qx "$name"; then continue; fi
     echo "$(date '+%F %T') $name start"
-    run $name $arch $cg $cycle $netlist
+    run $name $arch $cg $cycle $tutil $netlist
     echo "$(date '+%F %T') $name done"
 done
 echo "SWEEP_DONE $(date '+%F %T')"

@@ -9,23 +9,26 @@ black-box LVS.
 
 ## Results
 
-Post-layout, slow corner (1.08 V, 125 °C), TSMC 0.13 µm (CIC tsmc13 library), same ICC2 flow for every variant.
-Energy per decision = average power from PrimePower (switching activity from the post-layout SDF simulation)
-× simulated time / 50 objects.
+Post-layout, TSMC 0.13 µm (CIC tsmc13 library), same ICC2 flow for every variant. Setup is checked at the slow
+corner (1.08 V, 125 °C), hold at the slow and fast (1.32 V, −40 °C) corners. Energy per decision = average power
+from PrimePower (switching activity from the post-layout SDF simulation) × simulated time / 50 objects. All
+variants pass all 50 patterns in post-layout simulation and are DRC clean.
 
-| Variant | Clock | Cell area (µm²) | Setup / hold slack (ns) | Post-layout sim | Energy / decision (nJ) | DRC | LVS |
+| Variant | Clock | Util. | Cell area (µm²) | Core (µm²) | Setup / hold slow / hold fast (ns) | Energy / decision (nJ) | LVS |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Combinational multiplier | 30 ns | 11,739 | +13.08 / +0.30 | 50/50 | 0.695 | clean | pass |
-| Combinational + clock gating | 30 ns | 10,714 | +13.07 / +0.13 | 50/50 | 0.527 | clean | pass |
-| Serial shift-add multiplier | 30 ns | 10,375 | +13.29 / +0.31 | 50/50 | 3.457 | clean | pass |
-| Serial + clock gating | 30 ns | 9,210 | +13.12 / +0.24 | 50/50 | 1.439 | clean | pass |
-| Combinational, re-synthesized | 10 ns | 13,202 | −0.02 / +0.42 | 50/50 | 0.600 | clean | see note |
-| Combinational, re-synthesized | 8 ns | 13,584 | −0.00 / +0.50 | 50/50 | 0.533 | clean | see note |
+| Combinational multiplier | 30 ns | 60% | 11,744 | 19,737 | +13.19 / +0.32 / +0.09 | 0.657 | pass |
+| Combinational + clock gating | 30 ns | 60% | 10,699 | 17,782 | +13.31 / +0.14 / +0.01 | 0.475 | pass |
+| Serial shift-add multiplier | 30 ns | 60% | 10,380 | 17,050 | +13.29 / +0.29 / +0.08 | 3.470 | pass |
+| Serial + clock gating | 30 ns | 60% | 9,251 | 15,012 | +12.94 / +0.12 / −0.00 | 1.523 | pass |
+| Combinational, re-synthesized | 10 ns | 54% | 13,214 | 24,524 | −0.01 / +0.36 / +0.07 | 0.562 | see note |
+| Combinational, re-synthesized | 8 ns | 45% | 13,737 | 30,316 | −0.02 / +0.49 / +0.14 | 0.584 | see note |
+| Combinational multiplier | 30 ns | 89% | 11,751 | 13,155 | +13.17 / +0.32 / +0.09 | 0.661 | pass |
 
 - The contest ranks designs by synthesized cell area at a fixed 30-ns clock. By that metric the serial multiplier
-  with clock gating wins (−22% area), but it needs 10.5× the cycles and about twice the energy per decision of the
-  combinational design. Clock gating helps both architectures (−24% and −58% energy) and also removes the enable
-  muxes in front of the flip-flops.
+  with clock gating wins (−21% area), but it needs 10.5× the cycles and 2.3× the energy per decision of the
+  combinational design. Clock gating helps both architectures (−28% and −56% energy) and also removes the enable
+  muxes in front of the flip-flops; it tightens hold at the fast corner to about zero slack.
+- The same netlist routes cleanly at 89% utilization, shrinking the core by 33% with no change in timing.
 - Clock gating fails SDF gate-level simulation right after synthesis, because the gated clock arrives later than the
   ungated one. After clock-tree synthesis balances both, the gated designs pass post-layout simulation.
 - The 8-ns and 10-ns runs explore Fmax (about 125 MHz at the slow corner). Their LVS matches every instance, net and
