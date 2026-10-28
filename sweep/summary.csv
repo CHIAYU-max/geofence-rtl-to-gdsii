@@ -1,0 +1,11 @@
+name,cycle_ns,compile,total_area,comb_area,noncomb_area,slack_ns,cells,gate_sim
+A0_base,30,"compile",11905.563790,6465.396673,5440.167116,6.17,720,PASS
+A1_area_high,30,"set_max_area 0; compile -map_effort high -area_effort high",11912.353391,6472.186275,5440.167116,6.81,713,PASS
+A2_ultra,30,"set_max_area 0; compile_ultra",11695.086115,7273.359054,4421.727060,4.43,859,PASS
+A3_ultra_noflat,30,"set_max_area 0; compile_ultra -no_autoungroup",11805.417111,7368.413450,4437.003660,4.28,885,PASS
+B_25ns,25,"compile",11905.563790,6465.396673,5440.167116,1.17,720,PASS
+B_20ns,20,"compile",12061.724584,6473.883661,5587.840923,0.09,706,PASS
+B_15ns,15,"compile",12969.833520,8492.092256,4477.741264,0.12,916,PASS
+B_12ns,12,"compile",14716.458032,10233.624571,4482.833462,0.01,1080,PASS
+B_10ns,10,"compile",15101.767823,10618.934361,4482.833462,0.00,1186,PASS
+B_8ns,8,"compile",18384.539463,13825.323000,4559.216463,0.00,1344,PASS

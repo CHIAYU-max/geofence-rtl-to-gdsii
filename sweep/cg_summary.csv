@@ -1,0 +1,4 @@
+name,arch,cycle_ns,area_um2,slack_ns,sim_ns,cycles,gate_sim,power_mW,energy_per_obj_nJ,annotated
+base_cg_30ns,combinational,30,10759.818689,7.10,90150.0,3005,FAIL,0.1210,0.218,100.00%
+serial_cg_30ns,serial,30,9182.934104,12.42,948150.0,31605,FAIL,0.0637,1.208,100.00%
+serial_cg_10ns,serial,10,9860.196667,0.10,316050.0,31605,FAIL,0.1191,0.753,100.00%

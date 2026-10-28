@@ -3,7 +3,7 @@ vcs \
 -full64 \
 -sverilog \
 tb.sv \
-geofence.v \
+geofence_new.v geofence_ctrl.v sort_new.v \
 +access+r \
 +vcs+fsdbon 
 #+define+SDF \

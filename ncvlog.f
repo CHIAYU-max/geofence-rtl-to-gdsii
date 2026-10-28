@@ -1,5 +1,7 @@
 -sv tb.sv 
-geofence.v
+geofence_new.v
+geofence_ctrl.v
+sort_new.v
 +access+r
 
 #geofence_syn.v

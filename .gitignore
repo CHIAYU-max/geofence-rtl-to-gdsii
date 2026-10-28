@@ -17,3 +17,19 @@ default.svf
 *.mr
 *.syn
 *.pvl
+# Contest kit files (download from CIC, not redistributed here)
+*.pdf
+tb.sv
+univ.data
+pic*.png
+report.000
+# Process / library files (foundry NDA)
+*.tf
+*.db
+*.ndm
+# Synthesis and sweep outputs
+*.ddc
+*_syn.v
+*.sdf
+*.qor
+*.rpt

@@ -47,7 +47,28 @@ variants pass all 50 patterns in post-layout simulation and are DRC clean.
 | DRC, LVS | IC Validator | `apr/run_all.sh` |
 
 `apr/run_all.sh` runs one design end to end; `apr/apr_sweep.sh` runs every variant and writes `sweep_summary.csv`.
-Both expect the CIC library at `/mnt/nfs/opt/PROCESS/CBDK_IC_Contest_v2.5`.
+Both expect the CIC library at `/mnt/nfs/opt/PROCESS/CBDK_IC_Contest_v2.5`. Synthesized netlists are not committed:
+run the synthesis in `sweep/` (`ppa.sh`, `cg.sh`, `M_serial/run_serial.sh`, or `dc_shell -f syn.tcl` in a
+variant's folder) before `apr_sweep.sh`.
+
+## Repository layout
+
+| Path | Contents |
+| --- | --- |
+| `geofence_new.v`, `geofence_ctrl.v`, `sort_new.v` | Baseline design: one shared 11×11 multiplier, receivers sorted by shifting |
+| `sweep/M_serial/src/` | Serial shift-add multiplier variant |
+| `dc_syn.tcl`, `geofence.sdc`, `synopsys_dc.setup`, `vcs.cmd`, `ncvlog.f` | Synthesis and simulation setup, adapted from the contest kit |
+| `sweep/` | Synthesis sweeps (effort, clock, clock gating, serial multiplier) and power analysis; results in `sweep/*summary.csv` |
+| `apr/` | ICC2 place-and-route, post-layout simulation, PrimeTime / PrimePower and ICV sign-off |
+
+Some script comments are in Chinese.
+
+## Contest files
+
+The problem statement, testbench (`tb.sv`) and test patterns (`univ.data`) belong to the contest organizer and are
+not included. Download the 2021 university cell-based preliminary problem from the IC Design Contest site and put
+`tb.sv` and `univ.data` in the repository root before running the scripts. The TSMC 0.13 µm library and technology
+files are under NDA and are not included either.
 
 Notes on the back end:
 
@@ -58,5 +79,7 @@ Notes on the back end:
   corner that silently used the 1.32-V fast library until it was bound to the slow PVT, and unused Q / QN outputs
   in black-box LVS.
 
-The baseline RTL is my own. The serial-multiplier variant, the synthesis sweeps and the back-end scripts were
-developed with the help of an AI assistant (Claude).
+## Credits
+
+The baseline RTL is my own. The serial-multiplier variant, the synthesis and power sweeps (`sweep/`) and the
+back-end scripts (`apr/`) were developed with the help of an AI assistant (Claude).
