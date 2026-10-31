@@ -20,7 +20,7 @@
 //                  (pt1 - obj) x (pt2 - pt1) = (pt1 - obj) x (pt2 - obj)
 // Notes :
 //    1. Data registers have no reset, they are always loaded before used
-// Author : (your name)
+// Author : Chia-Yu Lee
 //
 //================================================================================
 module sort (

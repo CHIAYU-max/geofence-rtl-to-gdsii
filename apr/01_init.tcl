@@ -30,6 +30,9 @@ create_corner fast
 create_scenario -name func_fast -mode func -corner fast
 set_parasitic_parameters -corners fast -early_spec typical -late_spec typical
 set_scenario_status func_fast -setup false -hold true -leakage_power false -dynamic_power false
+# clock uncertainty is per scenario: without this the fast corner is hold fixed with none
+current_scenario func_fast
+source apr.sdc
 current_scenario func_slow
 
 # floorplan: 60% core utilization, 10 um ring channel

@@ -11,7 +11,7 @@
 //    3. S2_CHECK : 6 steps, one fence edge per step, is_inside is cleared as
 //                  soon as one edge is not counter clockwise seen from object
 //    4. S3_DONE  : valid is high for this cycle, then back to S0_LOAD
-// Author : (your name)
+// Author : Chia-Yu Lee
 //
 //================================================================================
 module geofence_ctrl (

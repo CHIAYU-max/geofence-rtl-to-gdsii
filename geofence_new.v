@@ -18,7 +18,7 @@
 //    1. Port names and the active high reset are fixed by the contest SPEC,
 //       so the rst_n / _i / _o naming rules cannot be applied on this module
 //    2. Top module holds wires and instances only
-// Author : (your name)
+// Author : Chia-Yu Lee
 //
 //================================================================================
 module geofence (

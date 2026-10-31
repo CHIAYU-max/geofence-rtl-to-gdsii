@@ -33,3 +33,9 @@ report.000
 *.sdf
 *.qor
 *.rpt
+# Verification and equivalence outputs
+verif/out/
+formal/out/
+sweep/M_dual/syn_*/
+sweep/N_gon/N*/
+__pycache__/

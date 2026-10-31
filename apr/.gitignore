@@ -4,3 +4,4 @@
 !*.tcl
 !*.sdc
 !*.sh
+!sweep_summary.csv

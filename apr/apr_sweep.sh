@@ -22,10 +22,14 @@ comb_8       combinational no  8  0.6 sweep/B_8ns/geofence_syn.v
 comb_30_u70  combinational no  30 0.7 sweep/A0_base/geofence_syn.v
 comb_30_u80  combinational no  30 0.8 sweep/A0_base/geofence_syn.v
 comb_30_u90  combinational no  30 0.9 sweep/A0_base/geofence_syn.v
+dual_30      dual          no  30 0.6 sweep/M_dual/syn_30/geofence_syn.v
+dual_cg_30   dual          yes 30 0.6 sweep/M_dual/syn_cg_30/geofence_syn.v
+dual_10      dual          no  10 0.6 sweep/M_dual/syn_10/geofence_syn.v
+dual_8       dual          no  8  0.6 sweep/M_dual/syn_8/geofence_syn.v
 "
 
 # setup: slow corner (1.08 V, 125 C); hold: slow and fast (1.32 V, -40 C) corners, both in PrimeTime
-[ -f $OUT ] || echo "name,arch,clock_gating,cycle_ns,target_util,cells,cell_area_um2,core_area_um2,util,setup_wns_ns,hold_slow_ns,hold_fast_ns,post_sim,sim_ns,power_mW,energy_per_obj_nJ,drc,lvs" > $OUT
+[ -f $OUT ] || echo "name,arch,clock_gating,cycle_ns,target_util,cells,cell_area_um2,core_area_um2,util,setup_wns_ns,hold_slow_ns,hold_fast_ns,post_sim,sim_ns,power_mW,energy_per_obj_nJ,energy_typ_nJ,drc,lvs" > $OUT
 
 run() {
     local name=$1 arch=$2 cg=$3 cycle=$4 tutil=$5 netlist=$ROOT/$6
@@ -38,7 +42,7 @@ run() {
     for s in 01_init 02_pnr 03_out; do
         timeout 3600 icc2_shell -f $s.tcl -output_log_file $s.log < /dev/null > /dev/null 2>&1
         if ! grep -q "STAGE: ${s#*_} done" $s.log; then
-            echo "$name,$arch,$cg,$cycle,$tutil,,,,,,,,ICC2_FAIL_$s,,,,," >> $OUT; cd $APR; return
+            echo "$name,$arch,$cg,$cycle,$tutil,,,,,,,,ICC2_FAIL_$s,,,,,," >> $OUT; cd $APR; return
         fi
     done
 
@@ -100,15 +104,23 @@ read_fsdb -strip_path testfixture/u_geofence sim/$fsdb
 update_power
 report_switching_activity > rpt/pt_activity.rpt
 report_power > rpt/pt_power.rpt
+report_power -hierarchy > rpt/pt_power_hier.rpt
 exit
 EOF
     timeout 1800 pt_shell -f pt.tcl < /dev/null > pt.log 2>&1
+    # typical corner energy (1.2 V, 25 C), same switching activity; the slow SPEF stands in for 25 C RC
+    sed -e 's/slow[.]db/typical.db/' -e 's#rpt/pt_#rpt/pt_typ_#g' pt.tcl > pt_typ.tcl
+    timeout 1800 pt_shell -f pt_typ.tcl < /dev/null > pt_typ.log 2>&1
     local setup=$(awk '/slack \(/{print $NF; exit}' rpt/pt_timing_max.rpt)
     local hold=$(awk '/slack \(/{print $NF; exit}' rpt/pt_timing_min.rpt)
     local p_w=$(awk '/^ *Total Power *=/{print $4; exit}' rpt/pt_power.rpt)
     local unit=$(awk '/^ *Total Power *=/{print $5; exit}' rpt/pt_power.rpt)
     local p_mw=$(awk -v p=$p_w -v u=$unit 'BEGIN{m=(u=="W")?1000:(u=="mW")?1:(u=="uW")?0.001:1000; printf "%.4f", p*m}')
     local e_nj=$(awk -v p=$p_mw -v t=$sim_ns 'BEGIN{printf "%.3f", p*1e-3*t*1e-9/50*1e9}')
+
+    local pt_w=$(awk '/^ *Total Power *=/{print $4; exit}' rpt/pt_typ_power.rpt)
+    local tunit=$(awk '/^ *Total Power *=/{print $5; exit}' rpt/pt_typ_power.rpt)
+    local e_typ=$(awk -v p=$pt_w -v u=$tunit -v t=$sim_ns 'BEGIN{m=(u=="W")?1000:(u=="mW")?1:(u=="uW")?0.001:1000; printf "%.3f", p*m*1e-3*t*1e-9/50*1e9}')
 
     # ICV DRC and black-box LVS
     mkdir -p drc lvs
@@ -128,7 +140,7 @@ EOF
     local core=$(awk '/^Total Area:/{print $NF; exit}' rpt/utilization.rpt)
     local util=$(awk '/Utilization Ratio/{print $NF; exit}' rpt/utilization.rpt)
     rm -rf sim/simv sim/simv.daidir sim/csrc sim/verdiLog sim/ucli.key
-    echo "$name,$arch,$cg,$cycle,$tutil,$cells,$area,$core,$util,$setup,$hold,$hold_fast,$sim,$sim_ns,$p_mw,$e_nj,$drc,$lvs" >> $OUT
+    echo "$name,$arch,$cg,$cycle,$tutil,$cells,$area,$core,$util,$setup,$hold,$hold_fast,$sim,$sim_ns,$p_mw,$e_nj,$e_typ,$drc,$lvs" >> $OUT
     cd $APR
 }
 
